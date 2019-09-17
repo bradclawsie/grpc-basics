@@ -11,16 +11,17 @@ import (
 	"google.golang.org/grpc"
 )
 
-const (
-	port = ":55555"
-)
-
-// server will implement CounterServer interface.
+// server will implement CounterServer interface as described
+// in ../counter/counter.pb.go. We'll also use it to encapsulate
+// the internal state - a map and a mutex.
 type server struct {
 	m   map[string]int32
 	mut *sync.RWMutex
 }
 
+// increment a key countername with value val.
+// increment is not directly tied to gRPC so it can be tested
+// independently.
 func (s *server) increment(countername string, val int32) int32 {
 	s.mut.Lock()
 	defer s.mut.Unlock()
@@ -32,6 +33,9 @@ func (s *server) increment(countername string, val int32) int32 {
 	return s.m[countername]
 }
 
+// IncrementCounter increments a key countername with value val.
+// IncrementCounter implements one function in the CounterServer interface
+// generated in ../counter/counter.pb.go.
 func (s *server) IncrementCounter(ctx context.Context, in *pb.Increment) (*pb.ValueResponse, error) {
 	countername := in.GetCountername()
 	val := in.GetIncrement()
@@ -44,6 +48,9 @@ func (s *server) IncrementCounter(ctx context.Context, in *pb.Increment) (*pb.Va
 	return resp, nil
 }
 
+// read the val corresponding to key countername or return an error.
+// read is not directly tied to gRPC so it can be tested
+// independently.
 func (s *server) read(countername string) (int32, error) {
 	s.mut.RLock()
 	defer s.mut.RUnlock()
@@ -54,6 +61,9 @@ func (s *server) read(countername string) (int32, error) {
 	return v, nil
 }
 
+// ReadCounter reads the val corresponding to key countername or return an error.
+// ReadCounter implements one function in the CounterServer interface
+// generated in ../counter/counter.pb.go.
 func (s *server) ReadCounter(ctx context.Context, in *pb.Read) (*pb.ValueResponse, error) {
 	countername := in.GetCountername()
 	val, err := s.read(countername)
@@ -69,13 +79,22 @@ func (s *server) ReadCounter(ctx context.Context, in *pb.Read) (*pb.ValueRespons
 }
 
 func main() {
+
+	// Instantiate our server instance.
 	s := &server{m: make(map[string]int32), mut: &sync.RWMutex{}}
-	listener, err := net.Listen("tcp", port)
+
+	// You'll need to remember to have clients bind to port 55555.
+	listener, err := net.Listen("tcp", ":55555")
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	grpcSrv := grpc.NewServer()
+
+	// s must satisfy the CounterServer interface defined in
+	// ../counter/counter.pb.go.
 	pb.RegisterCounterServer(grpcSrv, s)
+
 	if err := grpcSrv.Serve(listener); err != nil {
 		log.Fatal(err)
 	}

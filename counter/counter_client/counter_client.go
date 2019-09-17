@@ -11,17 +11,27 @@ import (
 	"google.golang.org/grpc"
 )
 
+// The client is intended to be used as a command line tool.
+// Make sure there is a corresponding server instance running.
+// To increment a key:
+// counter_client inc key val (where val is an int32)
+// To get a key's value:
+// counter_client get key
+
 func main() {
-	const use = "use: client [inc $key $val] | [get $key]"
+	const use = "use: counter_client [inc $key $val] | [get $key]"
+
 	if len(os.Args) < 3 {
 		log.Fatal(use)
 	}
 
+	// Connect to the server.
 	conn, err := grpc.Dial("localhost:55555", grpc.WithInsecure())
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer conn.Close()
+
 	client := pb.NewCounterClient(conn)
 
 	if os.Args[1] == "inc" {
@@ -47,6 +57,7 @@ func main() {
 			log.Fatal(err)
 		}
 
+		// Use generated getters to extract values.
 		countervalue := valueResponse.GetCountervalue()
 		countername := countervalue.GetCountername()
 		newValue := countervalue.GetValue()
@@ -73,6 +84,7 @@ func main() {
 			log.Fatal(err)
 		}
 
+		// Use generated getters to extract values.
 		countervalue := valueResponse.GetCountervalue()
 		countername := countervalue.GetCountername()
 		newValue := countervalue.GetValue()
