@@ -1,0 +1,34 @@
+syntax = "proto3";
+
+package counter;
+
+// Value contains a countername and its present value.
+message Value {
+  string countername = 1;
+  int32 value = 2;
+}
+
+// Increment contains a countername and a value to increment it by.
+// Assume a counter not defined will be incremented from 0 if not defined.
+message Increment {
+  string countername = 1;
+  int32 increment = 2;
+}
+
+// Read represents a request for a Value for countername.
+message Read {
+  string countername = 1;
+}
+
+// ValueResponse can contain either a CounterValue or an error in case
+// the counter is not defined.
+message ValueResponse {
+    Value countervalue = 1;
+}
+
+// Counter is a service that allows incrementing a counter and
+// reading a counter.
+service Counter {
+  rpc IncrementCounter (Increment) returns (ValueResponse) {}
+  rpc ReadCounter (Read) returns (ValueResponse) {}
+}
